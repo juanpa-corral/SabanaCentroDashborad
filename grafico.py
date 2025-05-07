@@ -161,13 +161,13 @@ def mostrar_pdf_desde_url(url):
         <iframe 
             src="data:application/pdf;base64,{base64_pdf}" 
             width="100%" 
-            height="800" 
+            height="800px" 
             type="application/pdf">
         </iframe>
         """
         st.markdown(pdf_display, unsafe_allow_html=True)
     else:
-        st.error("No se pudo cargar el PDF desde la URL.")
+        st.error(f"No se pudo cargar el PDF. Código de estado: {response.status_code}")
 
 # --- Carga Inicial ---
 df_sabana_centro_final2 = load_data(file_name)
