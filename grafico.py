@@ -2,6 +2,7 @@
 #                    IMPORTS
 # ==============================================================
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -660,7 +661,10 @@ if df_sabana_centro_final2 is not None and not df_sabana_centro_final2.empty:
         st.info("Documento elaborado por Sabana Centro Cómo Vamos.") # Quitamos cita temporalmente si la referencia está al final
         st.header("Informe de Guia Carreras")
         pdf_url = "https://raw.githubusercontent.com/juanpa-corral/SabanaCentroDashborad/723879917a0d4cb3df6151058ed29f50b461a2cb/GuiaCarreras.pdf"
-        mostrar_pdf_desde_url(pdf_url)
+        viewer_url = f"https://docs.google.com/gview?url={pdf_url}&embedded=true"
+        st.title("Guía de Carreras (vista online)")
+        components.iframe(viewer_url, width=800, height=1000)
+
     # --- PÁGINA 8: VER PDF INFORME DESERCIÓN --- # <- ¡¡NUEVA PÁGINA PDF 2!!
     elif pagina_seleccionada == "Ver PDF Informe Deserción":
         st.title("Informe sobre Deserción Académica y su Impacto en Sabana Centro")
