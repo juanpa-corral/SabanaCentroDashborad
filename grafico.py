@@ -131,44 +131,6 @@ def convert_df_to_csv(df):
     """Convierte un DataFrame a CSV listo para descargar."""
     return df.to_csv(index=False).encode('utf-8')
 
-# --- Función para incrustar PDF ---
-def show_pdf(file_path):
-    """Muestra un PDF incrustado en la app Streamlit."""
-    try:
-        with open(file_path,"rb") as f:
-            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-        # Incrusta el PDF usando un iframe HTML
-        # Ajusta la altura si es necesario
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
-        st.markdown(pdf_display, unsafe_allow_html=True)
-    except FileNotFoundError:
-        st.error(f"Error: No se encontró el archivo PDF en la ruta: {file_path}")
-        st.info("Verifica que la ruta y el nombre del archivo sean correctos.")
-    except Exception as e:
-        st.error(f"Error al intentar mostrar el PDF: {e}")
-
-def mostrar_pdf(pdf_path):
-    with open(pdf_path, "rb") as f:
-        base64_pdf = base64.b64encode(f.read()).decode("utf-8")
-    pdf_display = f"""
-    <iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>
-    """
-    st.markdown(pdf_display, unsafe_allow_html=True)
-def mostrar_pdf_desde_url(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        base64_pdf = base64.b64encode(response.content).decode("utf-8")
-        pdf_display = f"""
-        <iframe 
-            src="data:application/pdf;base64,{base64_pdf}" 
-            width="100%" 
-            height="800px" 
-            type="application/pdf">
-        </iframe>
-        """
-        st.markdown(pdf_display, unsafe_allow_html=True)
-    else:
-        st.error(f"No se pudo cargar el PDF. Código de estado: {response.status_code}")
 
 # --- Carga Inicial ---
 df_sabana_centro_final2 = load_data(file_name)
@@ -659,7 +621,7 @@ if df_sabana_centro_final2 is not None and not df_sabana_centro_final2.empty:
     elif pagina_seleccionada == "Ver PDF Guía Carreras": # <- Página PDF 1
         st.title("Guía para la Elección de Carrera Universitaria en Sabana Centro")
         st.info("Documento elaborado por Sabana Centro Cómo Vamos.") # Quitamos cita temporalmente si la referencia está al final
-        st.header("Informe de Guia Carreras")
+        st.header("Informe de Guia Carreras (Vista Online)")
         pdf_url = "https://raw.githubusercontent.com/juanpa-corral/SabanaCentroDashborad/723879917a0d4cb3df6151058ed29f50b461a2cb/GuiaCarreras.pdf"
         viewer_url = f"https://docs.google.com/gview?url={pdf_url}&embedded=true"
         st.title("Guía de Carreras (vista online)")
@@ -669,9 +631,10 @@ if df_sabana_centro_final2 is not None and not df_sabana_centro_final2.empty:
     elif pagina_seleccionada == "Ver PDF Informe Deserción":
         st.title("Informe sobre Deserción Académica y su Impacto en Sabana Centro")
         st.info("Documento elaborado por Sabana Centro Cómo Vamos.") # Quitamos cita temporalmente si la referencia está al final
-        st.header("Informe de Deserción")
-        pdf_url = "https://raw.githubusercontent.com/juanpa-corral/SabanaCentroDashborad/master/InformeDescercion.pdf"
-        mostrar_pdf_desde_url(pdf_url)
+        st.header("Informe de Deserción (Vista Online)")
+        pdf_url = "https://raw.githubusercontent.com/juanpa-corral/SabanaCentroDashborad/723879917a0d4cb3df6151058ed29f50b461a2cb/InformeDescercion.pdf"
+        viewer_url = f"https://docs.google.com/gview?url={pdf_url}&embedded=true"
+        components.iframe(viewer_url, width=800, height=1000)
 
 # --- Mensaje final si el DataFrame inicial estaba vacío ---
 else:
