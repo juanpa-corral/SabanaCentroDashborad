@@ -12,6 +12,7 @@ import statsmodels.api as sm
 from statsmodels.formula.api import ols
 import plotly.express as px
 from streamlit_option_menu import option_menu
+import requests
 import io # Necesario para descarga de gráficos (si se implementa)
 import scipy.stats as stats # Para skewness, kurtosis, kruskal
 # Necesario para incrustar PDF, asegúrate de tener PyMuPDF instalado: pip install pymupdf
@@ -152,6 +153,21 @@ def mostrar_pdf(pdf_path):
     <iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>
     """
     st.markdown(pdf_display, unsafe_allow_html=True)
+def mostrar_pdf_desde_url(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        base64_pdf = base64.b64encode(response.content).decode("utf-8")
+        pdf_display = f"""
+        <iframe 
+            src="data:application/pdf;base64,{base64_pdf}" 
+            width="100%" 
+            height="800" 
+            type="application/pdf">
+        </iframe>
+        """
+        st.markdown(pdf_display, unsafe_allow_html=True)
+    else:
+        st.error("No se pudo cargar el PDF desde la URL.")
 
 # --- Carga Inicial ---
 df_sabana_centro_final2 = load_data(file_name)
@@ -642,15 +658,16 @@ if df_sabana_centro_final2 is not None and not df_sabana_centro_final2.empty:
     elif pagina_seleccionada == "Ver PDF Guía Carreras": # <- Página PDF 1
         st.title("Guía para la Elección de Carrera Universitaria en Sabana Centro")
         st.info("Documento elaborado por Sabana Centro Cómo Vamos.") # Quitamos cita temporalmente si la referencia está al final
-        st.header("Informe de Deserción")
-        mostrar_pdf("GuiaCarreras.pdf")
-
+        st.header("Informe de Guia Carreras")
+        pdf_url = "https://raw.githubusercontent.com/juanpa-corral/SabanaCentroDashborad/main/GuiaCarreras.pdf"
+        mostrar_pdf_desde_url(pdf_url)
     # --- PÁGINA 8: VER PDF INFORME DESERCIÓN --- # <- ¡¡NUEVA PÁGINA PDF 2!!
     elif pagina_seleccionada == "Ver PDF Informe Deserción":
         st.title("Informe sobre Deserción Académica y su Impacto en Sabana Centro")
         st.info("Documento elaborado por Sabana Centro Cómo Vamos.") # Quitamos cita temporalmente si la referencia está al final
         st.header("Informe de Deserción")
-        mostrar_pdf("InformeDescercion.pdf")
+        pdf_url = "https://raw.githubusercontent.com/juanpa-corral/SabanaCentroDashborad/main/InformeDescercion.pdf"
+        mostrar_pdf_desde_url(pdf_url)
 
 # --- Mensaje final si el DataFrame inicial estaba vacío ---
 else:
