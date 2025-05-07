@@ -1,0 +1,14 @@
+streamlit
+pandas
+numpy
+matplotlib
+seaborn
+pingouin
+scikit_posthocs
+statsmodels
+plotly
+streamlit_option_menu
+io
+scipy
+fitz
+base64
