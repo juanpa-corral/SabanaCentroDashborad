@@ -10,5 +10,5 @@ plotly
 streamlit_option_menu
 io
 scipy
-fitz
+pymupdf
 base64
