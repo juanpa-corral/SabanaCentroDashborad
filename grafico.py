@@ -624,7 +624,6 @@ if df_sabana_centro_final2 is not None and not df_sabana_centro_final2.empty:
         st.header("Informe de Guia Carreras (Vista Online)")
         pdf_url = "https://raw.githubusercontent.com/juanpa-corral/SabanaCentroDashborad/723879917a0d4cb3df6151058ed29f50b461a2cb/GuiaCarreras.pdf"
         viewer_url = f"https://docs.google.com/gview?url={pdf_url}&embedded=true"
-        st.title("Guía de Carreras (vista online)")
         components.iframe(viewer_url, width=800, height=1000)
 
     # --- PÁGINA 8: VER PDF INFORME DESERCIÓN --- # <- ¡¡NUEVA PÁGINA PDF 2!!
