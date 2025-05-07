@@ -648,14 +648,14 @@ if df_sabana_centro_final2 is not None and not df_sabana_centro_final2.empty:
     elif pagina_seleccionada == "Ver PDF Guía Carreras": # <- Página PDF 1
         st.title("Guía para la Elección de Carrera Universitaria en Sabana Centro")
         st.info("Documento elaborado por Sabana Centro Cómo Vamos.") # Quitamos cita temporalmente si la referencia está al final
-        show_pdf(pdf_path_guia) # Llama a la función con la ruta correcta
+        st.header("Informe de Deserción")
         mostrar_pdf(pdf_path_guia)
 
     # --- PÁGINA 8: VER PDF INFORME DESERCIÓN --- # <- ¡¡NUEVA PÁGINA PDF 2!!
     elif pagina_seleccionada == "Ver PDF Informe Deserción":
         st.title("Informe sobre Deserción Académica y su Impacto en Sabana Centro")
         st.info("Documento elaborado por Sabana Centro Cómo Vamos.") # Quitamos cita temporalmente si la referencia está al final
-        show_pdf(pdf_path_desercion) # Llama a la función con la nueva ruta
+        st.header("Informe de Deserción")
         mostrar_pdf(pdf_path_desercion)
 
 # --- Mensaje final si el DataFrame inicial estaba vacío ---
