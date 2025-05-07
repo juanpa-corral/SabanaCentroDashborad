@@ -57,7 +57,7 @@ COL_GRUPO_EDAD = 'Grupo_Edad'       # Nombre para la columna de grupos de edad
 
 # --- Rutas a los Archivos ---
 # ¡¡ASEGÚRATE QUE ESTAS RUTAS SON CORRECTAS Y ACCESIBLES!!
-file_name = r"C:\Users\JuanPa\OneDrive - Universidad de la Sabana\SEMESTRES DOBLE PORGRAMA\6 SEMESTRE\PROG. APLICDA\df_sabana_centro (3).xlsx"
+file_name = "df_sabana_centro (3).xlsx"
 # --- RUTAS A LOS PDFs --- # <- ¡¡MODIFICADO!!
 pdf_path_guia = r"Guia_Carreras_Sabana_Centro_Reorganizada (2).pdf" # <- Ruta al PDF de Guía de Carreras
 pdf_path_desercion = r"Informe_Sabana_Centro_Desercion_Academica.pdf" # <- ¡¡NUEVO!! Ruta al PDF de Deserción
