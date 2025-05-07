@@ -59,8 +59,8 @@ COL_GRUPO_EDAD = 'Grupo_Edad'       # Nombre para la columna de grupos de edad
 # ¡¡ASEGÚRATE QUE ESTAS RUTAS SON CORRECTAS Y ACCESIBLES!!
 file_name = "df_sabana_centro (3).xlsx"
 # --- RUTAS A LOS PDFs --- # <- ¡¡MODIFICADO!!
-pdf_path_guia = r"Guia_Carreras_Sabana_Centro_Reorganizada (2).pdf" # <- Ruta al PDF de Guía de Carreras
-pdf_path_desercion = r"Informe_Sabana_Centro_Desercion_Academica.pdf" # <- ¡¡NUEVO!! Ruta al PDF de Deserción
+pdf_path_guia = "GuiaCarreras.pdf" # <- Ruta al PDF de Guía de Carreras
+pdf_path_desercion = "InformeDescercion.pdf" # <- ¡¡NUEVO!! Ruta al PDF de Deserción
 
 # ==============================================================
 #                    CARGA Y PREPROCESAMIENTO DE DATOS
