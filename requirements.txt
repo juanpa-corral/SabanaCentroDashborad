@@ -8,7 +8,6 @@ scikit_posthocs
 statsmodels
 plotly
 streamlit_option_menu
-io
 scipy
 pymupdf
 base64
