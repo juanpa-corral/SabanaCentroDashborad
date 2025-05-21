@@ -23,7 +23,7 @@ import os
 import google.generativeai as genai
 from fpdf import FPDF
 
-api_key = os.getenv("AIzaSyBoRVC2g3lAFtKGQLWoOZKBzN2hRBuklh0")
+api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     raise ValueError("No se encontró la API Key de Gemini. Define la variable de entorno GEMINI_API_KEY.")
 genai.configure(api_key=api_key)
