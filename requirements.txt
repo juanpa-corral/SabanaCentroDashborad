@@ -12,3 +12,5 @@ scipy
 pymupdf
 openpyxl
 requests
+fpdf2
+google-generativeai

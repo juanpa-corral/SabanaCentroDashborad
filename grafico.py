@@ -19,6 +19,14 @@ import scipy.stats as stats # Para skewness, kurtosis, kruskal
 # Necesario para incrustar PDF, asegúrate de tener PyMuPDF instalado: pip install pymupdf
 import fitz # PyMuPDF
 import base64 # Para codificar el PDF
+import os
+import google.generativeai as genai
+from fpdf import FPDF
+
+api_key = os.getenv("AIzaSyBoRVC2g3lAFtKGQLWoOZKBzN2hRBuklh0")
+if not api_key:
+    raise ValueError("No se encontró la API Key de Gemini. Define la variable de entorno GEMINI_API_KEY.")
+genai.configure(api_key=api_key)
 
 # ==============================================================
 #              CONFIGURACIÓN Y NUEVA PALETA DE COLORES
@@ -138,6 +146,118 @@ df_sabana_centro_final2 = load_data(file_name)
 # ==============================================================
 #               BARRA LATERAL (SIDEBAR) Y FILTROS
 # ==============================================================
+# ... (después de la definición de la clase PDF y configuración de genai.configure)
+
+def generar_y_guardar_pdf_con_ia(df_datos, col_ingreso, col_edu_label, nombre_archivo_salida="Informe_IA_Generado.pdf"):
+    """
+    Genera un PDF con análisis de IA usando Gemini y lo guarda localmente.
+    Retorna la ruta al archivo PDF generado o None si falla.
+    """
+    print("Iniciando generación de PDF con IA...")
+    texto_impacto_ingreso = "Texto de Gemini no generado (condiciones no cumplidas o error)."
+    median_income_edu_pdf = pd.DataFrame()
+
+    if col_ingreso in df_datos.columns and col_edu_label in df_datos.columns:
+        median_income_edu_pdf = df_datos.dropna(subset=[col_ingreso, col_edu_label])\
+                                        .groupby(col_edu_label)[col_ingreso]\
+                                        .median().sort_index().reset_index()
+    
+    api_key_valida = 'api_key' in globals() and api_key # Chequeo básico
+    
+    if not median_income_edu_pdf.empty and api_key_valida:
+        try:
+            # Asegúrate de usar el nombre de modelo que te funciona (ej. 'gemini-1.0-pro', 'gemini-1.5-flash-latest')
+            # El error anterior mencionaba 'gemini-2.0-pro-exp' y luego 'gemini-1.0-pro' como posible solución.
+            # Usa el que te funcionó o el que tengas disponible en tu cuota.
+            model = genai.GenerativeModel('gemini-2.0-flash') # ¡Verifica este nombre de modelo!
+            
+            datos_ingreso_texto = "Datos de ingreso mediano:\n"
+            for index, row in median_income_edu_pdf.iterrows():
+                datos_ingreso_texto += f"- {row[col_edu_label]}: ${row[col_ingreso]:,.0f}\n"
+
+            prompt_impacto_ingreso = f"""
+            Eres un analista socioeconómico redactando un informe sobre la deserción académica en Sabana Centro.
+            Basándote en los siguientes datos de ingreso mediano por nivel educativo:
+            {datos_ingreso_texto}
+
+            Escribe un párrafo para la sección "Impacto en el Ingreso Futuro".
+            Destaca cómo un mayor nivel educativo se correlaciona con mayores ingresos,
+            basándote en la evidencia de los datos proporcionados.
+            El tono debe ser formal y analítico, similar al 'InformeDescercion.pdf'.
+            No inventes datos que no se proporcionan. Concéntrate en la interpretación de la tendencia.
+            """
+            print("Enviando prompt a Gemini...")
+            response = model.generate_content(prompt_impacto_ingreso)
+            texto_impacto_ingreso = response.text
+            print("Texto para 'Impacto en el Ingreso Futuro' generado por Gemini.")
+
+        except Exception as e:
+            texto_impacto_ingreso = f"Error al generar texto con Gemini: {e}"
+            print(texto_impacto_ingreso)
+            st.error(f"Error al contactar la API de Gemini: {e}") # Mostrar error en Streamlit
+            # return None # Podrías detener la generación si Gemini falla
+    elif median_income_edu_pdf.empty:
+        print("No hay datos suficientes de ingreso mediano para el informe de IA.")
+        texto_impacto_ingreso = "No fue posible generar el texto debido a la falta de datos de ingreso mediano."
+    elif not api_key_valida:
+        print("API Key de Gemini no configurada correctamente.")
+        texto_impacto_ingreso = "No fue posible generar el texto debido a que la API Key de Gemini no está configurada."
+        st.error("API Key de Gemini no configurada. No se puede generar el informe.")
+        # return None
+
+    # --- Creación del PDF ---
+    try:
+        print(f"Creando PDF: {nombre_archivo_salida}")
+        pdf_obj = PDF() # Usa tu clase PDF definida
+        pdf_obj.add_page()
+        pdf_obj.set_font('Arial', 'B', 16)
+        pdf_obj.cell(0, 10, "Informe sobre Deserción Académica con Análisis de IA", 0, 1, 'C')
+        pdf_obj.ln(10)
+        pdf_obj.chapter_title("Impacto en el Ingreso Futuro (Análisis por IA)")
+        pdf_obj.chapter_body(texto_impacto_ingreso)
+        pdf_obj.chapter_body("[Generación e inserción de gráfico OMITIDA en esta versión de PDF con IA]")
+        
+        pdf_obj.output(nombre_archivo_salida, "F")
+        print(f"PDF '{nombre_archivo_salida}' guardado localmente.")
+        return nombre_archivo_salida
+    except Exception as e:
+        print(f"Error al crear o guardar el PDF: {e}")
+        st.error(f"Error al crear el archivo PDF: {e}")
+        return None
+
+# ... (resto de tu código como load_data, configuraciones de sidebar, etc.)
+class PDF(FPDF):
+        def header(self):
+            # Logo (opcional) - asegúrate que 'Logo.png' está en la misma carpeta o proporciona la ruta correcta
+            # self.image('Logo.png', 10, 8, 33)
+            self.set_font('Arial', 'B', 12)
+            self.cell(0, 10, 'Informe Autogenerado Sabana Centro', 0, 1, 'C')
+            self.ln(10) # Salto de línea
+
+        def footer(self):
+            self.set_y(-15)
+            self.set_font('Arial', 'I', 8)
+            self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
+
+        def chapter_title(self, title):
+            self.set_font('Arial', 'B', 14)
+            self.cell(0, 10, title, 0, 1, 'L')
+            self.ln(5)
+
+        def chapter_body(self, text_content):
+            self.set_font('Arial', '', 11)
+            self.multi_cell(0, 7, text_content) # Usar 7 o similar para el interlineado
+            self.ln()
+
+        def add_image_from_file(self, image_path):
+            try:
+                # Calcula el ancho de la imagen para que quepa en la página (ej. ancho de página - márgenes)
+                page_width = self.w - 2 * self.l_margin
+                self.image(image_path, x=None, y=None, w=page_width * 0.8, h=0) # w=0 o h=0 para mantener proporción
+                self.ln(5)
+            except RuntimeError as e:
+                print(f"Error al añadir imagen {image_path}: {e}. Asegúrate que el archivo existe y es una imagen válida.")
+                self.multi_cell(0,7, f"[Error: No se pudo cargar la imagen {os.path.basename(image_path)}]")
 
 # Procede solo si la carga fue exitosa y el dataframe no es None
 if df_sabana_centro_final2 is not None and not df_sabana_centro_final2.empty:
@@ -153,14 +273,16 @@ if df_sabana_centro_final2 is not None and not df_sabana_centro_final2.empty:
             "Análisis por Trabajo", "Análisis por Municipio",
             "Conclusiones y Plan",
             "Ver PDF Guía Carreras", # <- Opción PDF 1
-            "Ver PDF Informe Deserción" # <- ¡¡NUEVA OPCIÓN PDF 2!!
+            "Ver PDF Informe Deserción"#, # <- ¡¡NUEVA OPCIÓN PDF 2!!
+            #"Ver PDF generado con IA (Gemini)" # <- ¡¡NUEVA OPCIÓN PDF 2!!
         ]
         menu_icons_base = [
             'speedometer2', 'clipboard-data', 'graph-up-arrow',
             'briefcase-fill', 'geo-alt-fill', # Ajustado el icono de municipio
             'lightbulb',
             'file-earmark-pdf-fill', # Icono para PDF 1
-            'file-earmark-break-fill' # <- ¡¡NUEVO ICONO PDF 2!! (O usa otro como 'file-earmark-medical-fill')
+            'file-earmark-break-fill'#, # <- ¡¡NUEVO ICONO PDF 2!! (O usa otro como 'file-earmark-medical-fill')
+            #'file-earmark-medical-fill'
         ]
         # Mapeo de nombres de página a columnas requeridas (además de INGRESO)
         required_cols_map = {
@@ -171,7 +293,8 @@ if df_sabana_centro_final2 is not None and not df_sabana_centro_final2.empty:
             "Análisis por Municipio": [COL_MUNICIPIO_NAME, COL_EDU_LABEL, COL_EDU_NUM],
             "Conclusiones y Plan": [], # Esta siempre se muestra
             "Ver PDF Guía Carreras": [], # Esta siempre se muestra
-            "Ver PDF Informe Deserción": [] # <- ¡¡NUEVA!! Esta siempre se muestra
+            "Ver PDF Informe Deserción": [] #, <- ¡¡NUEVA!! Esta siempre se muestra
+            #"Ver PDF generado con IA (Gemini)": []
         }
 
         available_options = []
@@ -616,6 +739,52 @@ if df_sabana_centro_final2 is not None and not df_sabana_centro_final2.empty:
         * Profundizar en los resultados de encuestas vocacionales y de seguimiento a egresados/desertores para entender mejor las aspiraciones versus la realidad del mercado y las barreras educativas.
         * Evaluar el impacto de programas de formación continua, certificaciones, y programas de apoyo a la permanencia en la mejora de los ingresos, la empleabilidad y la reducción de la deserción.
         """)
+        
+        st.divider()
+        st.subheader("Generar Informe Adicional con Análisis de IA")
+        st.markdown("""
+        Presiona el siguiente botón para generar un informe PDF que incluye un análisis 
+        del impacto del nivel educativo en el ingreso, redactado por la IA de Gemini, 
+        basado en los datos actualmente cargados (sin aplicar filtros de la barra lateral).
+        """)
+
+        if st.button("📄 Generar y Descargar PDF con Análisis de IA"):
+            with st.spinner("Generando PDF con IA, por favor espera... Esto puede tardar unos momentos."):
+                # Usamos df_sabana_centro_final2 (datos originales sin filtros de sidebar) 
+                # para el informe de IA, o df_filtered si prefieres que se base en los filtros.
+                # Para este ejemplo, usaré los datos completos originales.
+                df_para_informe_ia = df_sabana_centro_final2 
+                
+                if df_para_informe_ia is not None and not df_para_informe_ia.empty:
+                    nombre_pdf_ia = "Informe_Desercion_con_Analisis_IA.pdf"
+                    ruta_pdf_generado = generar_y_guardar_pdf_con_ia(
+                        df_datos=df_para_informe_ia,
+                        col_ingreso=COL_INGRESO,
+                        col_edu_label=COL_EDU_LABEL,
+                        nombre_archivo_salida=nombre_pdf_ia
+                    )
+
+                    if ruta_pdf_generado and os.path.exists(ruta_pdf_generado):
+                        try:
+                            with open(ruta_pdf_generado, "rb") as pdf_file:
+                                pdf_bytes = pdf_file.read()
+                            
+                            st.download_button(
+                                label="✅ ¡PDF Listo! Haz clic para descargar",
+                                data=pdf_bytes,
+                                file_name=nombre_pdf_ia, # Nombre que tendrá el archivo al descargar
+                                mime="application/pdf" # O "application/octet-stream"
+                            )
+                            st.success(f"El informe '{nombre_pdf_ia}' ha sido generado.")
+                            # Opcional: Limpiar el archivo del servidor después de ofrecer la descarga
+                            # if os.path.exists(ruta_pdf_generado):
+                            #     os.remove(ruta_pdf_generado)
+                        except Exception as e_read:
+                            st.error(f"Error al leer el archivo PDF generado para descarga: {e_read}")
+                    else:
+                        st.error("Hubo un problema al generar el PDF con IA y no se puede descargar.")
+                else:
+                    st.error("No hay datos cargados para generar el informe con IA.")
 
     # --- PÁGINA 7: VER PDF GUÍA CARRERAS ---
     elif pagina_seleccionada == "Ver PDF Guía Carreras": # <- Página PDF 1
@@ -634,6 +803,111 @@ if df_sabana_centro_final2 is not None and not df_sabana_centro_final2.empty:
         pdf_url = "https://raw.githubusercontent.com/juanpa-corral/SabanaCentroDashborad/723879917a0d4cb3df6151058ed29f50b461a2cb/InformeDescercion.pdf"
         viewer_url = f"https://docs.google.com/gview?url={pdf_url}&embedded=true"
         components.iframe(viewer_url, width=800, height=1000)
+
+    elif pagina_seleccionada == "Ver PDF generado con IA (Gemini)":
+        df_completo = load_data(file_name) # Asumiendo que file_name está definido
+        if df_completo is None or df_completo.empty:
+            print("Error: No se pudieron cargar los datos para generar el PDF.")
+            # Considera st.error() si estás en Streamlit
+        else: 
+            print("Datos cargados correctamente para PDF.")
+            median_income_edu = pd.DataFrame() # Inicializar DataFrame vacío
+
+            if COL_INGRESO in df_completo.columns and COL_EDU_LABEL in df_completo.columns:
+                median_income_edu = df_completo.dropna(subset=[COL_INGRESO, COL_EDU_LABEL])\
+                                                .groupby(COL_EDU_LABEL)[COL_INGRESO]\
+                                                .median().sort_index().reset_index()
+                
+                if not median_income_edu.empty:
+                    print("Datos de ingreso mediano por educación (para el prompt de Gemini):")
+                    print(median_income_edu)
+                    # No se intenta generar ni guardar el gráfico de Plotly aquí.
+                    print("Generación de imagen del gráfico OMITIDA.")
+                else:
+                    print("No hay datos suficientes para el análisis de ingreso mediano por educación después de agrupar.")
+            else:
+                print(f"Error: Las columnas requeridas ('{COL_INGRESO}' o '{COL_EDU_LABEL}') no se encuentran en el DataFrame.")
+
+            # --- Generación de Texto con Gemini ---
+            texto_impacto_ingreso = "Texto de Gemini no generado (condiciones no cumplidas o error)." # Placeholder
+
+            # Verifica si hay datos para el prompt y si la API Key está configurada
+            # (asumiendo que 'api_key' es una variable global o accesible en esteスコープ)
+            # Reemplaza 'api_key_configurada_correctamente' con tu lógica real de verificación de API key
+            api_key_configurada_correctamente = False 
+            if 'api_key' in globals() and api_key: # Chequeo simple, mejora esto
+                api_key_configurada_correctamente = True
+
+            if not median_income_edu.empty and api_key_configurada_correctamente:
+                try:
+                    # Asegúrate que genai y model estén definidos si la API Key está configurada
+                    if not 'genai' in globals(): # Si no has importado y configurado genai antes
+                        import google.generativeai as genai
+                        # NECESITAS CONFIGURAR TU API KEY AQUÍ SI NO LO HAS HECHO ANTES GLOBALMENTE
+                        # genai.configure(api_key="TU_API_KEY")
+                    
+                    model = genai.GenerativeModel('gemini-2.0-flash') # Mover la inicialización aquí o asegurar que esté global
+                    
+                    datos_ingreso_texto = "Datos de ingreso mediano:\n"
+                    for index, row in median_income_edu.iterrows():
+                        datos_ingreso_texto += f"- {row[COL_EDU_LABEL]}: ${row[COL_INGRESO]:,.0f}\n"
+
+                    prompt_impacto_ingreso = f"""
+                    Eres un analista socioeconómico redactando un informe sobre la deserción académica en Sabana Centro.
+                    Basándote en los siguientes datos de ingreso mediano por nivel educativo:
+                    {datos_ingreso_texto}
+
+                    Escribe un párrafo para la sección "Impacto en el Ingreso Futuro".
+                    Destaca cómo un mayor nivel educativo se correlaciona con mayores ingresos,
+                    basándote en la evidencia de los datos proporcionados.
+                    El tono debe ser formal y analítico, similar al 'InformeDescercion.pdf'[cite: 28, 40].
+                    No inventes datos que no se proporcionan. Concéntrate en la interpretación de la tendencia.
+                    """
+                    print("Enviando prompt a Gemini...")
+                    response = model.generate_content(prompt_impacto_ingreso)
+                    texto_impacto_ingreso = response.text
+                    print("Texto para 'Impacto en el Ingreso Futuro' generado por Gemini.")
+                except Exception as e:
+                    texto_impacto_ingreso = f"Error al generar texto con Gemini para impacto ingreso: {e}"
+                    print(texto_impacto_ingreso)
+            elif median_income_edu.empty:
+                print("No se generará texto con Gemini porque no hay datos de ingreso mediano.")
+                texto_impacto_ingreso = "No fue posible generar el texto debido a la falta de datos de ingreso mediano."
+            elif not api_key_configurada_correctamente:
+                print("No se generará texto con Gemini porque la API Key no está configurada.")
+                texto_impacto_ingreso = "No fue posible generar el texto debido a que la API Key de Gemini no está configurada."
+
+            # --- Creación del PDF --- 
+            print("Iniciando creación de PDF (sin imagen)...")
+            pdf_desercion = PDF() # Asegúrate que la clase PDF esté definida
+            pdf_desercion.add_page()
+
+            pdf_desercion.set_font('Arial', 'B', 16)
+            pdf_desercion.cell(0, 10, "Informe sobre Deserción Académica en Sabana Centro", 0, 1, 'C')
+            pdf_desercion.ln(10)
+
+            pdf_desercion.chapter_title("Impacto en el Ingreso Futuro")
+            pdf_desercion.chapter_body(texto_impacto_ingreso) 
+
+            # Se omite la adición de la imagen
+            pdf_desercion.chapter_body("[Generación e inserción de gráfico OMITIDA para esta prueba]")
+            print("Adición de imagen al PDF OMITIDA.")
+
+            try:
+                output_pdf_path = "Informe_Desercion_AutoGenerado_TextoSolamente.pdf"
+                pdf_desercion.output(output_pdf_path, "F")
+                print(f"PDF '{output_pdf_path}' generado exitosamente (solo texto).")
+                # Si usas Streamlit, aquí podrías añadir el botón de descarga:
+                # with open(output_pdf_path, "rb") as pdf_file:
+                #     PDFbyte = pdf_file.read()
+                # st.download_button(label="Descargar PDF (Texto Solamente)",
+                #                     data=PDFbyte,
+                #                     file_name=output_pdf_path,
+                #                     mime='application/octet-stream')
+            except Exception as e:
+                print(f"Error al guardar el PDF: {e}")
+
+    
 
 # --- Mensaje final si el DataFrame inicial estaba vacío ---
 else:
