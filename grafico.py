@@ -166,14 +166,43 @@ def generar_y_guardar_pdf_con_ia(df_datos, col_ingreso, col_edu_label, nombre_ar
     
     if not median_income_edu_pdf.empty and api_key_valida:
         try:
-            # Asegúrate de usar el nombre de modelo que te funciona (ej. 'gemini-1.0-pro', 'gemini-1.5-flash-latest')
-            # El error anterior mencionaba 'gemini-2.0-pro-exp' y luego 'gemini-1.0-pro' como posible solución.
-            # Usa el que te funcionó o el que tengas disponible en tu cuota.
-            model = genai.GenerativeModel('gemini-2.0-flash') # ¡Verifica este nombre de modelo!
+            model = genai.GenerativeModel('gemini-2.0-flash')
             
             datos_ingreso_texto = "Datos de ingreso mediano:\n"
             for index, row in median_income_edu_pdf.iterrows():
                 datos_ingreso_texto += f"- {row[col_edu_label]}: ${row[col_ingreso]:,.0f}\n"
+
+            prompt_introduccion = f"""
+            Eres un analista socioeconómico redactando un informe sobre la deserción académica en Sabana Centro.
+            Basándote en los siguientes datos de ingreso mediano por nivel educativo:
+            {datos_ingreso_texto}
+
+            Escribe un párrafo para la sección "Introduccion".
+            Dame una introduccion para el informe que debe dar la empresa sabana centro.
+            El tono debe ser formal y analítico, similar al 'InformeDescercion.pdf'.
+            No inventes datos que no se proporcionan. Concéntrate en la interpretación de la tendencia.
+            Solo dame el parrafo, sin titulos ni subtitulos.
+            """
+            print("Enviando prompt a Gemini...")
+            response = model.generate_content(prompt_introduccion)
+            texto_introduccion = response.text
+            print("Texto para 'Introduccion' generado por Gemini.")
+
+            prompt_falta = f"""
+            Eres un analista socioeconómico redactando un informe sobre la deserción académica en Sabana Centro.
+            Basándote en los siguientes datos de ingreso mediano por nivel educativo:
+            {datos_ingreso_texto}
+
+            Escribe un párrafo para la sección "Causas de la Falta de Continuidad Académica".
+            Podrías listar factores teóricos y pedir a Gemini que los desarrolle en el contexto de Sabana Centro, quizás mencionando datos si los tienes (ej. % de población con acceso limitado).
+            El tono debe ser formal y analítico, similar al 'InformeDescercion.pdf'.
+            No inventes datos que no se proporcionan. Concéntrate en la interpretación de la tendencia.
+            Solo dame el parrafo, sin titulos ni subtitulos.
+            """
+            print("Enviando prompt a Gemini...")
+            response = model.generate_content(prompt_falta)
+            texto_falta = response.text
+            print("Texto para 'Causas de la Falta de Continuidad Académica' generado por Gemini.")
 
             prompt_impacto_ingreso = f"""
             Eres un analista socioeconómico redactando un informe sobre la deserción académica en Sabana Centro.
@@ -185,10 +214,43 @@ def generar_y_guardar_pdf_con_ia(df_datos, col_ingreso, col_edu_label, nombre_ar
             basándote en la evidencia de los datos proporcionados.
             El tono debe ser formal y analítico, similar al 'InformeDescercion.pdf'.
             No inventes datos que no se proporcionan. Concéntrate en la interpretación de la tendencia.
+            Solo dame el parrafo, sin titulos ni subtitulos.
             """
             print("Enviando prompt a Gemini...")
             response = model.generate_content(prompt_impacto_ingreso)
             texto_impacto_ingreso = response.text
+            print("Texto para 'Impacto en el Ingreso Futuro' generado por Gemini.")
+
+            Implicaciones = f"""
+            Eres un analista socioeconómico redactando un informe sobre la deserción académica en Sabana Centro.
+            Basándote en los siguientes datos de ingreso mediano por nivel educativo:
+            {datos_ingreso_texto}
+
+            Escribe un párrafo para la sección "Implicaciones para Sabana Centro".
+            Haz conclusiones basadas en los impactos, y ademas de eso en las diferentes zonas de sabana centro y que se deberia hacer.
+            El tono debe ser formal y analítico, similar al 'InformeDescercion.pdf'.
+            No inventes datos que no se proporcionan. Concéntrate en la interpretación de la tendencia.
+            Solo dame el parrafo, sin titulos ni subtitulos.
+            """
+            print("Enviando prompt a Gemini...")
+            response = model.generate_content(Implicaciones)
+            texto_Implicaciones = response.text
+            print("Texto para 'Impacto en el Ingreso Futuro' generado por Gemini.")
+
+            lineas = f"""
+            Eres un analista socioeconómico redactando un informe sobre la deserción académica en Sabana Centro.
+            Basándote en los siguientes datos de ingreso mediano por nivel educativo:
+            {datos_ingreso_texto}
+
+            Escribe 2 párrafos para la sección "Posibles Líneas de Acción".
+            Dame sugerencias de que se podria hacer frente a todo este fenomeno segun los datos, para mejorar el problema.
+            El tono debe ser formal y analítico, similar al 'InformeDescercion.pdf'.
+            No inventes datos que no se proporcionan. Concéntrate en la interpretación de la tendencia.
+            Solo dame el parrafo, sin titulos ni subtitulos.
+            """
+            print("Enviando prompt a Gemini...")
+            response = model.generate_content(lineas)
+            texto_lineas = response.text
             print("Texto para 'Impacto en el Ingreso Futuro' generado por Gemini.")
 
         except Exception as e:
@@ -213,9 +275,17 @@ def generar_y_guardar_pdf_con_ia(df_datos, col_ingreso, col_edu_label, nombre_ar
         pdf_obj.set_font('Arial', 'B', 16)
         pdf_obj.cell(0, 10, "Informe sobre Deserción Académica con Análisis de IA", 0, 1, 'C')
         pdf_obj.ln(10)
+        pdf_obj.chapter_title("Introduccion")
+        pdf_obj.chapter_body(texto_introduccion)
+        pdf_obj.chapter_title("Causas de la Falta de Continuidad Académica")
+        pdf_obj.chapter_body(texto_falta)
         pdf_obj.chapter_title("Impacto en el Ingreso Futuro (Análisis por IA)")
         pdf_obj.chapter_body(texto_impacto_ingreso)
-        pdf_obj.chapter_body("[Generación e inserción de gráfico OMITIDA en esta versión de PDF con IA]")
+        pdf_obj.chapter_title("Implicaciones para Sabana Centro")
+        pdf_obj.chapter_body(texto_Implicaciones)
+        pdf_obj.chapter_title("Posibles Líneas de Acción")
+        pdf_obj.chapter_body(texto_lineas)
+
         
         pdf_obj.output(nombre_archivo_salida, "F")
         print(f"PDF '{nombre_archivo_salida}' guardado localmente.")
@@ -229,7 +299,7 @@ def generar_y_guardar_pdf_con_ia(df_datos, col_ingreso, col_edu_label, nombre_ar
 class PDF(FPDF):
         def header(self):
             # Logo (opcional) - asegúrate que 'Logo.png' está en la misma carpeta o proporciona la ruta correcta
-            # self.image('Logo.png', 10, 8, 33)
+            self.image('Logo.png', 10, 8, 33)
             self.set_font('Arial', 'B', 12)
             self.cell(0, 10, 'Informe Autogenerado Sabana Centro', 0, 1, 'C')
             self.ln(10) # Salto de línea
